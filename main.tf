@@ -18,6 +18,10 @@ variable "key_name" {
     type = string
 }
 
+variable "cidr_block" {
+  type = string
+}
+
 resource "aws_security_group" "jenkins_sg" {
   name        = "jenkins_sg"
   description = "Allow Jenkins Traffic"
@@ -57,7 +61,7 @@ data "aws_ami" "amazon_linux" {
 
   filter {
     name   = "name"
-    values = ["*al2023-ami-2023.6.*-kernel-6.1-x86_64*"]
+    values = ["al2023-ami-*-x86_64"]
   }
 
   filter {
@@ -95,29 +99,17 @@ EOF
 
 resource "aws_iam_instance_profile" "test_profile" {
   name = "test_profile"
-  role = "${aws_iam_role.test_role.name}"
+  role = aws_iam_role.test_role.name
 }
 
-resource "aws_iam_role_policy" "test_policy" {
-  name = "test_policy"
-  role = "${aws_iam_role.test_role.id}"
+resource "aws_iam_role_policy_attachment" "test_policy_attach" {
+  role       = aws_iam_role.test_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+}
 
-  policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-     {
-            "Effect": "Allow",
-            "Action": "*",
-            "Resource": "*"
-     }
-  ]
-}
-EOF
-}
 
 resource "aws_instance" "web" {
-  ami             = "ami-02f617729751b375a"
+  ami             = "ami-0fa3fe0fa7920f68e"
   instance_type   = "t2.medium" 
   key_name        = var.key_name
   iam_instance_profile = "${aws_iam_instance_profile.test_profile.name}"
@@ -127,8 +119,7 @@ resource "aws_instance" "web" {
     Name = "Jenkins"
   }
 root_block_device {
-    volume_size = 30
-    
-  }
+  volume_size = 30
+}
 }
 
